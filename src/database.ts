@@ -23,7 +23,7 @@ export const users: TUser[] = [
 export const products: TProducts[] = [
   {
     id: "eve",
-    name: "Everton",
+    name: "cadeira",
     price: 50,
     description: "chablau",
     imageUrl: "http://",
@@ -37,3 +37,55 @@ export const products: TProducts[] = [
     imageUrl: "http://",
   },
 ];
+
+export function createUser(
+  id: string,
+  name: string,
+  email: string,
+  password: number
+): string {
+  const createdAt = new Date().toISOString();
+  const newUser: TUser = {
+    id,
+    name,
+    email,
+    password,
+    createdAt,
+  };
+
+  users.push(newUser);
+  return "Cadastro realizado com sucesso";
+}
+
+export function getAllUsers(): TUser[] {
+  return users;
+}
+
+export function createProduct(
+  id: string,
+  name: string,
+  price: number,
+  description: string,
+  imageUrl: string
+): string {
+  const newProduct: TProducts = {
+    id,
+    name,
+    price,
+    description,
+    imageUrl,
+  };
+
+  products.push(newProduct);
+  return "Produto cadastrado com sucesso";
+}
+
+export function getAllProduct(): TProducts[] {
+  return products;
+}
+
+export function searchProductsByName(name: string): TProducts[] {
+  return products.filter((product) =>
+    product.name.toLowerCase().includes(name.toLowerCase())
+  );
+}
