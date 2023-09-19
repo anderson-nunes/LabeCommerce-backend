@@ -53,99 +53,213 @@ app.get("/teste", (req: Request, res: Response) => {
 /////////////////////////////////////////////////////////
 
 app.get("/users", (req: Request, res: Response) => {
-  const result: TUser[] = users;
+  try {
+    const result: TUser[] = users;
 
-  res.status(200).send(result);
+    res.status(200).send(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
+  }
 });
 
-app.post("/users", (req: Request, res: Response) => {
-  const { id, name, email, password, createdAt }: TUser = req.body;
+app.post("/users", (req: Request, res: Response): void => {
+  try {
+    const { id, name, email, password, createdAt }: TUser = req.body;
 
-  const newUsers: TUser = {
-    id,
-    name,
-    email,
-    password,
-    createdAt,
-  };
+    const userWithSame = users.find((user) => user.id === id);
 
-  users.push(newUsers);
-  res.status(2001).send("Usuário registrado com sucesso");
+    if (userWithSame) {
+      res.statusCode = 404;
+      throw new Error(`Já existe conta com o mesmo ${id}`);
+    }
+
+    const emailWithSame = users.find((user) => user.email === email);
+
+    if (emailWithSame) {
+      res.statusCode = 404;
+      throw new Error(`Já existe conta com o mesmo ${email}`);
+    }
+
+    const newUsers: TUser = {
+      id,
+      name,
+      email,
+      password,
+      createdAt,
+    };
+
+    users.push(newUsers);
+    res.status(2001).send("Usuário registrado com sucesso");
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
+  }
+});
+
+app.delete("/users/:id", (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+
+    const idAccountExist = users.find((user) => user.id === id);
+
+    if (!idAccountExist) {
+      res.statusCode = 404;
+      throw new Error(`Não existe uma conta com o id ${id}`);
+    }
+
+    const indexToDelete = users.findIndex((user) => user.id === id);
+
+    if (indexToDelete >= 0) {
+      users.splice(indexToDelete, 1);
+    }
+    res.status(200).send({ message: "Usuário deletado com sucesso!" });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
+  }
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-app.get("/products", (req: Request, res: Response) => {
+app.get("/products", (req: Request, res: Response): void => {
   const result: TProducts[] = products;
 
   res.status(200).send(result);
 });
 
-app.get("/products/search", (req: Request, res: Response) => {
-  const query: string = req.query.q as string;
+app.get("/products/search", (req: Request, res: Response): void => {
+  try {
+    const query: string = req.query.q as string;
 
-  const productsByProducts: TProducts[] = products.filter(
-    (product) => product.name.toLowerCase() === query.toLowerCase()
-  );
+    if (query.length === 0) {
+      res.statusCode = 404;
+      throw new Error("Query deve possuir pelo menos 1 caractere");
+    }
 
-  res.status(200).send(productsByProducts);
+    const productsByProducts: TProducts[] = products.filter(
+      (product) => product.name.toLowerCase() === query.toLowerCase()
+    );
+
+    if (productsByProducts.length === 0) {
+      res.statusCode = 404;
+      throw new Error("Nenhum produto encontrado para a query");
+    }
+
+    res.status(200).send(productsByProducts);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
+  }
 });
 
 app.post("/products", (req: Request, res: Response) => {
-  const { id, name, price, description, imageUrl }: TProducts = req.body;
+  try {
+    const { id, name, price, description, imageUrl }: TProducts = req.body;
 
-  const newProducts: TProducts = {
-    id,
-    name,
-    price,
-    description,
-    imageUrl,
-  };
+    const productWithSame = products.find((product) => product.id === id);
 
-  products.push(newProducts);
-  res.status(2001).send("Produto registrado com sucesso");
-});
+    if (productWithSame) {
+      res.statusCode = 404;
+      throw new Error(`Já existe produto com o mesmo ${id}`);
+    }
 
-app.delete("/users/:id", (req: Request, res: Response) => {
-  const id = req.params.id;
+    const newProducts: TProducts = {
+      id,
+      name,
+      price,
+      description,
+      imageUrl,
+    };
 
-  const indexToDelete = users.findIndex((user) => user.id === id);
-
-  if (indexToDelete >= 0) {
-    users.splice(indexToDelete, 1);
+    products.push(newProducts);
+    res.status(201).send("Produto registrado com sucesso");
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
   }
-  res.status(200).send({ message: "Usuário deletado com sucesso!" });
 });
 
 app.delete("/products/:id", (req: Request, res: Response) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const indexToDelete = products.findIndex((user) => user.id === id);
+    const idAccountExist = products.find((product) => product.id === id);
 
-  if (indexToDelete >= 0) {
-    products.splice(indexToDelete, 1);
+    if (!idAccountExist) {
+      res.statusCode = 404;
+      throw new Error(`Não existe um produto com o id ${id}`);
+    }
+
+    const indexToDelete = products.findIndex((user) => user.id === id);
+
+    if (indexToDelete >= 0) {
+      products.splice(indexToDelete, 1);
+    }
+    res.status(200).send({ message: "Produto deletado com sucesso!" });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
   }
-  res.status(200).send({ message: "Produto deletado com sucesso!" });
 });
 
 app.put("/products/:id", (req: Request, res: Response) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const newName = req.body.name as string | undefined;
-  const newPrice = req.body.price as number | undefined;
-  const newDescription = req.body.description as string | undefined;
-  const newImageUrl = req.body.imageUrl as string | undefined;
+    const newName = req.body.name as string | undefined;
+    const newPrice = req.body.price as number | undefined;
+    const newDescription = req.body.description as string | undefined;
+    const newImageUrl = req.body.imageUrl as string | undefined;
 
-  const product = products.find((product) => product.id === id);
+    const product = products.find((product) => product.id === id);
 
-  if (product) {
-    product.name = newName || product.name;
-    product.price = newPrice || product.price;
-    product.description = newDescription || product.description;
-    product.imageUrl = newImageUrl || product.imageUrl;
+    if (!product) {
+      res.statusCode = 404;
+      throw new Error(`Esse produto já existe`);
+    }
 
-    res.status(200).send({ message: "O item foi alterado com sucesso" });
-  } else {
-    res.status(404).send({ message: "Produto não encontrado" });
+    if (newName?.length === 0) {
+      res.statusCode = 404;
+      throw new Error("Novo produto deve ter mais que 1 caracter");
+    }
+
+    if (newPrice !== undefined && newPrice <= 0) {
+      res.statusCode = 404;
+      throw new Error("Preço maior que 1");
+    }
+
+    if (newDescription?.length === 0) {
+      res.statusCode = 404;
+      throw new Error("Nova descrição deve ter mais que 1 caracter");
+    }
+
+    const validUrlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
+
+    if (newImageUrl && !validUrlRegex.test(newImageUrl)) {
+      res.statusCode = 404;
+      throw new Error("nova imagem possui um formato invÃ¡lido");
+    }
+
+    if (product) {
+      product.name = newName || product.name;
+      product.price = newPrice || product.price;
+      product.description = newDescription || product.description;
+      product.imageUrl = newImageUrl || product.imageUrl;
+
+      res.status(200).send({ message: "O item foi alterado com sucesso" });
+    } else {
+      res.status(404).send({ message: "Produto não encontrado" });
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
   }
 });
