@@ -4,17 +4,17 @@ export { TUser } from "./types";
 
 export const users: TUser[] = [
   {
-    id: "and",
+    id: "001",
     name: "Anderson",
-    email: "teste@example.com",
+    email: "anderson@example.com",
     password: 12345,
     createdAt: new Date().toISOString(),
   },
 
   {
-    id: "eve",
+    id: "002",
     name: "Everton",
-    email: "teste@example.com",
+    email: "everton@example.com",
     password: 54321,
     createdAt: new Date().toISOString(),
   },
@@ -22,18 +22,18 @@ export const users: TUser[] = [
 
 export const products: TProducts[] = [
   {
-    id: "eve",
-    name: "cadeira",
-    price: 50,
-    description: "chablau",
+    id: "001",
+    name: "Cadeira",
+    price: 450,
+    description: "Cadeira de Escritório",
     imageUrl: "http://",
   },
 
   {
-    id: "pat",
-    name: "Patricia",
-    price: 70,
-    description: "chablau",
+    id: "002",
+    name: "Monitor",
+    price: 950,
+    description: "Monitor FULL HD 27",
     imageUrl: "http://",
   },
 ];
