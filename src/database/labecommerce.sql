@@ -71,6 +71,8 @@ CREATE TABLE purchases (
     created_at DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')),
     FOREIGN KEY (buyer_id) REFERENCES users(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
+    ON UPDATE CASCADE -- efeito cascata ao atualizar id na tabela users
+		ON DELETE CASCADE -- efeito cascata ao atualizar id na tabela users
 );
 
 
@@ -80,7 +82,9 @@ VALUES
 ('p001', '001', 75.50, 'p1', 'Descrição produto 1'),
 ('p002', '002', 100.25, 'p2', 'Descrição produto 2');
 
-
+INSERT INTO purchases (id, buyer_id, total_price, product_id, product_description)
+VALUES 
+('p003', '003', 75.50, 'p3', 'Descrição produto 3'),
 
 -- Selecionando todos os pedidosc
 SELECT * FROM purchases;
@@ -96,15 +100,33 @@ SET total_price = 299.99
 WHERE id = 'p002';
 
 SELECT
-    p.id AS id_da_compra,
+    p.id AS id_da_compra,    
     u.id AS id_de_quem_fez_a_compra,
     u.name AS nome_de_quem_fez_a_compra,
     u.email AS email_de_quem_fez_a_compra,
     p.total_price AS preco_total_da_compra,
     p.created_at AS data_da_compra
-FROM
-    purchases AS p
-JOIN
-    users AS u ON p.buyer_id = u.id
-WHERE
-    p.id = 'p001';
+FROM purchases AS p 
+JOIN users AS u 
+ON p.buyer_id = u.id 
+WHERE p.id = 'p001';
+
+DROP TABLE purchases_products;
+
+CREATE TABLE purchases_products (
+  purchase_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  quantity INTEGER NOT NULL,
+  FOREIGN KEY (purchase_id) REFERENCES purchases (id),
+  FOREIGN KEY (product_id) REFERENCES products (id)
+  ON UPDATE CASCADE -- efeito cascata ao atualizar id na tabela users
+	ON DELETE CASCADE -- efeito cascata ao atualizar id na tabela users
+);
+
+INSERT INTO purchases_products (purchases_id, product_id, quantity)
+VALUES
+("p001", "p1", 10)
+("p002", "p2", 10)
+("p003", "p3", 10)
+
+
