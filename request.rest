@@ -1,0 +1,69 @@
+GET http://localhost:3003/users
+###
+
+POST http://localhost:3003/users
+Content-Type: application/json
+
+  {
+    "id": "0010",
+    "name": "Tadeu",
+    "email": "tadeu@email.com",
+    "password": "9090909"
+  }
+###
+
+
+DELETE http://localhost:3003/users/001
+Content-Type: application/json
+###
+
+GET http://localhost:3003/products
+###
+
+GET http://localhost:3003/products/search?q=Produto 12
+###
+
+POST http://localhost:3003/products
+Content-Type: application/json
+
+  {       
+    "id": "p3",
+    "name": "Produto 3",
+    "price": 490.99,
+    "description": "Descrição do Produto 3",
+    "image_url": "url_imagem_3.jpg"
+  }
+###
+
+PUT http://localhost:3003/products/p17
+Content-Type: application/json
+
+  {       
+    "newId": "p2",
+    "newName": "Produto 2",
+    "newPrice": 290.99,
+    "newDescription": "Descrição do Produto 2",
+    "newImageUrl": "http://url_imagem_2.jpg"
+  }
+###
+
+DELETE http://localhost:3003/products/p1
+Content-Type: application/json
+###
+
+GET http://localhost:3003/purchases
+###
+
+POST http://localhost:3003/purchases
+Content-Type: application/json
+
+  {       
+    "id": "p003",
+    "buyer_id": "001",
+    "total_price": 290.99
+  }
+###
+
+DELETE http://localhost:3003/purchases/p002
+Content-Type: application/json
+###
