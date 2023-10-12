@@ -1,18 +1,8 @@
-import {
-  users,
-  products,
-  createUser,
-  getAllUsers,
-  createProduct,
-  getAllProduct,
-  searchProductsByName,
-  TUser,
-} from "./database";
-
 import express, { Request, Response } from "express";
 
 import cors from "cors";
-import { TProducts } from "./types";
+import { TProducts, TUser } from "./types";
+import { db } from "./database/knex";
 
 const app = express();
 
@@ -27,36 +17,11 @@ app.listen(3003, () => {
   console.log("Servidor rodando na porta 3003");
 });
 
-app.get("/teste", (req: Request, res: Response) => {
-  // console.log(req.body);
-  res.send("testado!");
-});
-
-/////////////////////////////////////////////////////////////////////////////
-
-// console.log(users, products, getAllUsers, getAllProduct);
-
-// console.log(createUser("u003", "Astrodev", "astrodev@email.com", 123399));
-
-// console.log(
-//   createProduct(
-//     "prod003",
-//     "SSD gamer",
-//     349.99,
-//     "Acelere seu sistema com velocidades incríveis de leitura e gravação.",
-//     "https://images.unsplash.com/photo"
-//   )
-// );
-
-// console.log(searchProductsByName("cadeira"));
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
 // Não precisa de validação, basta refatorar para o uso do try/catch
 
-app.get("/users", (req: Request, res: Response) => {
+app.get("/users", async (req: Request, res: Response) => {
   try {
-    const result: TUser[] = users;
+    const result: TUser[] = await db.raw(`SELECT * FROM users`);
 
     res.status(200).send(result);
   } catch (error) {
@@ -70,9 +35,9 @@ app.get("/users", (req: Request, res: Response) => {
 // Não deve ser possível criar mais de uma conta com a mesma id
 // Não deve ser possível criar mais de uma conta com o mesmo e-mail
 
-app.post("/users", (req: Request, res: Response): void => {
+app.post("/users", async (req: Request, res: Response) => {
   try {
-    const { id, name, email, password, createdAt }: TUser = req.body;
+    const { id, name, email, password }: TUser = req.body;
 
     if (!id) {
       res.statusCode = 404;
@@ -89,46 +54,26 @@ app.post("/users", (req: Request, res: Response): void => {
       throw new Error(`O campo 'email' deve ser um endereço de e-mail válido`);
     }
 
-    //Verificar essa condição
-
-    if (typeof password !== "number" || password <= 6) {
+    if (typeof password !== "string" || password.length < 6) {
       res.statusCode = 404;
       throw new Error(`O campo 'password' deve ter pelo menos 6 caracteres.`);
     }
 
-    if (!createdAt || isNaN(Date.parse(createdAt))) {
-      res.statusCode = 404;
-      throw new Error(
-        `O campo 'createdAt' deve ser uma data válida no formato ISO8601.`
-      );
+    const [isId] = await db.raw(`SELECT id FROM users WHERE id = "${id}"`);
+
+    console.log("@isId==>>", isId);
+
+    if (isId) {
+      // NÃO POSSO CADASTRAR
+      res.status(400);
+      throw new Error(`Id inválido`);
+    } else {
+      await db.raw(`INSERT INTO users(id, name, email, password)
+      VALUES("${id}", "${name}", "${email}", "${password}")
+      `);
+
+      res.status(200).send("Cadastro realizado com sucesso");
     }
-
-    // Não deve ser possível criar mais de uma conta com a mesma id
-    const userWithSameId = users.find((user) => user.id === id);
-
-    if (userWithSameId) {
-      res.statusCode = 404;
-      throw new Error(`Já existe conta com o mesmo ${id}`);
-    }
-
-    // Não deve ser possível criar mais de uma conta com o mesmo e-mail
-    const userWithSameEmail = users.find((user) => user.email === email);
-
-    if (userWithSameEmail) {
-      res.statusCode = 404;
-      throw new Error(`Já existe conta com o mesmo ${email}`);
-    }
-
-    const newUsers: TUser = {
-      id,
-      name,
-      email,
-      password,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUsers);
-    res.status(2001).send("Usuário registrado com sucesso");
   } catch (error) {
     if (error instanceof Error) {
       res.send(error.message);
@@ -138,35 +83,32 @@ app.post("/users", (req: Request, res: Response): void => {
 
 // Validar que a conta existe antes de deletá-la
 
-app.delete("/users/:id", (req: Request, res: Response) => {
+app.delete("/users/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
-    const idAccountExist = users.find((user) => user.id === id);
+    const userExists = await db.raw("SELECT * FROM users WHERE id = ?", [id]);
 
-    if (!idAccountExist) {
-      res.statusCode = 404;
-      throw new Error(`Não existe uma conta com o id ${id}`);
+    if (userExists[0].length === 0) {
+      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
+      return;
     }
 
-    const indexToDelete = users.findIndex((user) => user.id === id);
+    await db.raw("DELETE FROM users WHERE id = ?", [id]);
 
-    if (indexToDelete >= 0) {
-      users.splice(indexToDelete, 1);
-    }
-    res.status(200).send({ message: "Usuário deletado com sucesso!" });
+    res.status(200).send({ message: "O usuário foi deletado com sucesso" });
   } catch (error) {
-    if (error instanceof Error) {
-      res.send(error.message);
-    }
+    console.error("Erro:", error);
+    res.status(400).send("Erro ao deletar usuário");
   }
 });
 
+/////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-app.get("/products", (req: Request, res: Response): void => {
+app.get("/products", async (req: Request, res: Response) => {
   try {
-    const result: TProducts[] = products;
+    const result: TProducts[] = await db.raw(`SELECT * FROM products`);
 
     res.status(200).send(result);
   } catch (error) {
@@ -178,28 +120,32 @@ app.get("/products", (req: Request, res: Response): void => {
 
 // se query params for recebido, deve possuir pelo menos um caractere
 
-app.get("/products/search", (req: Request, res: Response): void => {
+app.get("/products/search", async (req, res) => {
   try {
     const query: string = req.query.q as string;
 
     if (query.length === 0) {
       res.statusCode = 404;
-      throw new Error("Query deve possuir pelo menos 1 caractere");
+      throw new Error("Query deve possuir pelo menos um caractere");
     }
 
-    const productsByProducts: TProducts[] = products.filter(
-      (product) => product.name.toLowerCase() === query.toLowerCase()
+    const productsByName: TProducts[] = await db("products").where(
+      "name",
+      "like",
+      `${query}`
     );
 
-    if (productsByProducts.length === 0) {
+    if (productsByName.length === 0) {
       res.statusCode = 404;
-      throw new Error("Nenhum produto encontrado para a query");
+      throw new Error(`Nenhum produto encontrado para a query "${query}"`);
     }
 
-    res.status(200).send(productsByProducts);
+    res.status(200).send(productsByName);
   } catch (error) {
     if (error instanceof Error) {
       res.send(error.message);
+    } else {
+      res.send("Erro: a query deve possuir pelo menos um caractere");
     }
   }
 });
@@ -207,7 +153,7 @@ app.get("/products/search", (req: Request, res: Response): void => {
 // Validar o body
 // Não deve ser possível criar mais de um produto com a mesma id
 
-app.post("/products", (req: Request, res: Response) => {
+app.post("/products", async (req: Request, res: Response) => {
   try {
     const { id, name, price, description, imageUrl }: TProducts = req.body;
 
@@ -238,23 +184,22 @@ app.post("/products", (req: Request, res: Response) => {
       throw new Error("nova imagem possui um formato inválido");
     }
 
-    const productWithSame = products.find((product) => product.id === id);
+    // Verificar se o produto já existe
+    const productWithSameId = await db.raw(
+      "SELECT * FROM products WHERE id = ?",
+      [id]
+    );
 
-    if (productWithSame) {
-      res.statusCode = 404;
-      throw new Error(`Já existe produto com o mesmo id ${id}`);
+    if (productWithSameId.length > 0) {
+      res.status(400).send(`Já existe um produto com o mesmo ID ${id}.`);
+      return;
     }
 
-    const newProducts: TProducts = {
-      id,
-      name,
-      price,
-      description,
-      imageUrl,
-    };
+    await db.raw(`INSERT INTO products
+    VALUES("${id}", "${name}", "${price}", "${description}", "${imageUrl}")
+    `);
 
-    products.push(newProducts);
-    res.status(201).send("Produto registrado com sucesso");
+    res.status(200).send("Produto cadastrado com sucesso");
   } catch (error) {
     if (error instanceof Error) {
       res.send(error.message);
@@ -265,19 +210,21 @@ app.post("/products", (req: Request, res: Response) => {
 // Validar que o produto existe antes de editá-lo
 // Validar os dados opcionais do body se eles forem recebidos
 
-app.put("/products/:id", (req: Request, res: Response) => {
+app.put("/products/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
-    const newName = req.body.name as string | undefined;
-    const newPrice = req.body.price as number | undefined;
-    const newDescription = req.body.description as string | undefined;
-    const newImageUrl = req.body.imageUrl as string | undefined;
+
+    const newId = req.body.newId as string | undefined;
+    const newName = req.body.newName as string | undefined;
+    const newPrice = req.body.newPrice as number | undefined;
+    const newDescription = req.body.newDescription as string | undefined;
+    const newImageUrl = req.body.newImageUrl as string | undefined;
 
     //REVISAR ESSA LÓGICA
 
-    const product = products.find((product) => product.id === id);
+    const [product] = await db.raw("SELECT * FROM products WHERE id = ?", [id]);
 
-    if (!product) {
+    if (product.length === 0) {
       res.statusCode = 404;
       throw new Error(`Esse produto não existe`);
     }
@@ -304,15 +251,21 @@ app.put("/products/:id", (req: Request, res: Response) => {
       throw new Error("Nova imagem possui um formato inválido");
     }
 
-    if (product) {
-      product.name = newName || product.name;
-      product.price = newPrice || product.price;
-      product.description = newDescription || product.description;
-      product.imageUrl = newImageUrl || product.imageUrl;
+    const [newProduct] = await db.raw(
+      `SELECT * FROM products WHERE id = "${id}"`
+    );
 
-      res.status(200).send({ message: "O item foi alterado com sucesso" });
-    } else {
-      res.status(404).send({ message: "Produto não encontrado" });
+    if (newProduct) {
+      await db.raw(`UPDATE products SET
+      id = "${newId || newProduct.id}",
+      name = "${newName || newProduct.id}",
+      price = "${newPrice || newProduct.price}",
+      description = "${newDescription || newProduct.description}",
+      image_Url = "${newImageUrl || newProduct.image_Url}"      
+      WHERE id = "${id}"
+      `);
+
+      res.status(200).send("Produto editado com sucesso");
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -323,26 +276,78 @@ app.put("/products/:id", (req: Request, res: Response) => {
 
 // Validar que o produto existe antes de deletá-lo
 
-app.delete("/products/:id", (req: Request, res: Response) => {
+app.delete("/products/:id", async (req, res) => {
   try {
     const id = req.params.id;
 
-    const idAccountExist = products.find((product) => product.id === id);
+    const product = await db.raw("SELECT * FROM products WHERE id = ?", [id]);
 
-    if (!idAccountExist) {
+    if (product[0].length === 0) {
+      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
+      return;
+    }
+
+    await db.raw("DELETE FROM products WHERE id = ?", [id]);
+
+    res.status(200).send({ message: "Produto deletado com sucesso" });
+  } catch (error) {
+    console.error("Erro:", error);
+    res.status(500).send("Erro ao deletar produto");
+  }
+});
+
+//////
+
+app.post("/purchases", async (req: Request, res: Response) => {
+  try {
+    const { id, buyer_id, total_price } = req.body;
+
+    console.log("@===>>>", id, buyer_id, total_price);
+
+    if (typeof id !== "string" || id.length < 4) {
       res.statusCode = 404;
-      throw new Error(`Não existe um produto com o id ${id}`);
+      throw new Error(`O campo do 'id' é obrigatório`);
     }
 
-    const indexToDelete = products.findIndex((user) => user.id === id);
-
-    if (indexToDelete >= 0) {
-      products.splice(indexToDelete, 1);
+    if (typeof buyer_id !== "string" || buyer_id.length < 3) {
+      res.statusCode = 404;
+      throw new Error(`O campo do 'buyer id' é obrigatório`);
     }
-    res.status(200).send({ message: "Produto deletado com sucesso!" });
+
+    if (typeof total_price !== "number" || total_price <= 1) {
+      res.statusCode = 404;
+      throw new Error(`O campo do 'preço' é obrigatório`);
+    }
+
+    const isPurchase = await db.raw(`INSERT INTO purchases
+    (id, buyer_id, total_price)
+    VALUES("${id}", "${buyer_id}", "${total_price}")
+    `);
+
+    res.status(200).send("Produto cadastrado com sucesso");
   } catch (error) {
     if (error instanceof Error) {
       res.send(error.message);
     }
+  }
+});
+
+app.delete("/purchases/:id", async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+
+    const purchase = await db.raw("SELECT * FROM purchases WHERE id = ?", [id]);
+
+    if (purchase[0].length === 0) {
+      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
+      return;
+    }
+
+    await db.raw("DELETE FROM purchases WHERE id = ?", [id]);
+
+    res.status(200).send({ message: "Produto deletado com sucesso" });
+  } catch (error) {
+    console.error("Erro:", error);
+    res.status(500).send("Erro ao deletar produto");
   }
 });

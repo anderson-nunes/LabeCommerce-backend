@@ -2,8 +2,7 @@ export type TUser = {
   id: string;
   name: string;
   email: string;
-  password: number;
-  createdAt: string;
+  password: string;
 };
 
 export type TProducts = {

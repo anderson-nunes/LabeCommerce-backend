@@ -18,6 +18,7 @@ VALUES
   ('003', 'Beltrano', 'beltrano@email.com', '121212'),
   ('004', 'João', 'joao@email.com', '212121');
 
+
 DELETE FROM users WHERE id = '001';
 
 SELECT * FROM users;
@@ -33,17 +34,17 @@ CREATE TABLE products (
 
 INSERT INTO products (id, name, price, description, image_url) 
 VALUES 
-    ('p1', 'Produto 1', 70.99, 'Descrição do Produto 1', 'url_imagem_1.jpg'),
-    ('p2', 'Produto 2', 59.99, 'Descrição do Produto 2', 'url_imagem_2.jpg'),
-    ('p3', 'Produto 3', 299.99, 'Descrição do Produto 3', 'url_imagem_3.jpg'),
-    ('p4', 'Produto 4', 1099.99, 'Descrição do Produto 4', 'url_imagem_4.jpg'),
-    ('p5', 'Produto 5', 99.99, 'Descrição do Produto 5', 'url_imagem_5.jpg'),
-    ('p6', 'Produto 6', 199.99, 'Descrição do Produto 6', 'url_imagem_6.jpg');
+    ('p1', 'Produto1', 70.99, 'Descrição do Produto 1', 'url_imagem_1.jpg'),
+    ('p2', 'Produto2', 59.99, 'Descrição do Produto 2', 'url_imagem_2.jpg'),
+    ('p3', 'Produto3', 299.99, 'Descrição do Produto 3', 'url_imagem_3.jpg'),
+    ('p4', 'Produto4', 1099.99, 'Descrição do Produto 4', 'url_imagem_4.jpg'),
+    ('p5', 'Produto5', 99.99, 'Descrição do Produto 5', 'url_imagem_5.jpg'),
+    ('p6', 'Produto6', 199.99, 'Descrição do Produto 6', 'url_imagem_6.jpg');
 
 SELECT * FROM products;
 
 SELECT * FROM products
-WHERE name = 'Produto 1';
+WHERE name = 'Produto2';
 
 DELETE FROM products WHERE id = 'p1';
 
@@ -74,7 +75,6 @@ CREATE TABLE purchases (
     ON UPDATE CASCADE -- efeito cascata ao atualizar id na tabela users
 		ON DELETE CASCADE -- efeito cascata ao atualizar id na tabela users
 );
-
 
 -- Inserindo pedidos com produtos associados
 INSERT INTO purchases (id, buyer_id, total_price, product_id, product_description)
