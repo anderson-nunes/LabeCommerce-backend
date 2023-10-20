@@ -17,11 +17,9 @@ app.listen(3003, () => {
   console.log("Servidor rodando na porta 3003");
 });
 
-// Não precisa de validação, basta refatorar para o uso do try/catch
-
 app.get("/users", async (req: Request, res: Response) => {
   try {
-    const result: TUser[] = await db.raw(`SELECT * FROM users`);
+    const result: TUser[] = await db("users");
 
     res.status(200).send(result);
   } catch (error) {
@@ -30,10 +28,6 @@ app.get("/users", async (req: Request, res: Response) => {
     }
   }
 });
-
-// Validar o body
-// Não deve ser possível criar mais de uma conta com a mesma id
-// Não deve ser possível criar mais de uma conta com o mesmo e-mail
 
 app.post("/users", async (req: Request, res: Response) => {
   try {
@@ -59,21 +53,16 @@ app.post("/users", async (req: Request, res: Response) => {
       throw new Error(`O campo 'password' deve ter pelo menos 6 caracteres.`);
     }
 
-    const [isId] = await db.raw(`SELECT id FROM users WHERE id = "${id}"`);
+    const newUsers = {
+      id,
+      name,
+      email,
+      password,
+    };
 
-    console.log("@isId==>>", isId);
+    await db("users").insert(newUsers);
 
-    if (isId) {
-      // NÃO POSSO CADASTRAR
-      res.status(400);
-      throw new Error(`Id inválido`);
-    } else {
-      await db.raw(`INSERT INTO users(id, name, email, password)
-      VALUES("${id}", "${name}", "${email}", "${password}")
-      `);
-
-      res.status(200).send("Cadastro realizado com sucesso");
-    }
+    res.status(200).send("Cadastro realizado com sucesso");
   } catch (error) {
     if (error instanceof Error) {
       res.send(error.message);
@@ -81,34 +70,34 @@ app.post("/users", async (req: Request, res: Response) => {
   }
 });
 
-// Validar que a conta existe antes de deletá-la
-
-app.delete("/users/:id", async (req, res) => {
+app.delete("/users/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
 
-    const userExists = await db.raw("SELECT * FROM users WHERE id = ?", [id]);
-
-    if (userExists[0].length === 0) {
-      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
+    if (!id || typeof id !== "string" || id.length !== 3) {
+      res.status(400).send("Informe um 'id' de 3 caracteres.");
       return;
     }
 
-    await db.raw("DELETE FROM users WHERE id = ?", [id]);
+    const [user] = await db("users").where({ id });
 
-    res.status(200).send({ message: "O usuário foi deletado com sucesso" });
+    if (user) {
+      await db("users").where({ id }).delete();
+      res.status(200).send("Usuário deletado com sucesso");
+    } else {
+      res.status(404).send("Usuário não encontrado");
+    }
   } catch (error) {
-    console.error("Erro:", error);
-    res.status(400).send("Erro ao deletar usuário");
+    console.error(error);
+    res
+      .status(500)
+      .send(error instanceof Error ? error.message : "Erro inesperado");
   }
 });
 
-/////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-
 app.get("/products", async (req: Request, res: Response) => {
   try {
-    const result: TProducts[] = await db.raw(`SELECT * FROM products`);
+    const result: TProducts[] = await db("products");
 
     res.status(200).send(result);
   } catch (error) {
@@ -118,9 +107,7 @@ app.get("/products", async (req: Request, res: Response) => {
   }
 });
 
-// se query params for recebido, deve possuir pelo menos um caractere
-
-app.get("/products/search", async (req, res) => {
+app.get("/products/search", async (req: Request, res: Response) => {
   try {
     const query: string = req.query.q as string;
 
@@ -150,12 +137,9 @@ app.get("/products/search", async (req, res) => {
   }
 });
 
-// Validar o body
-// Não deve ser possível criar mais de um produto com a mesma id
-
 app.post("/products", async (req: Request, res: Response) => {
   try {
-    const { id, name, price, description, imageUrl }: TProducts = req.body;
+    const { id, name, price, description, image_url }: TProducts = req.body;
 
     if (!id) {
       res.statusCode = 404;
@@ -179,7 +163,7 @@ app.post("/products", async (req: Request, res: Response) => {
 
     const validUrlRegex = /^http:\/\//;
 
-    if (imageUrl && !validUrlRegex.test(imageUrl)) {
+    if (image_url && !validUrlRegex.test(image_url)) {
       res.statusCode = 404;
       throw new Error("nova imagem possui um formato inválido");
     }
@@ -191,13 +175,19 @@ app.post("/products", async (req: Request, res: Response) => {
     );
 
     if (productWithSameId.length > 0) {
-      res.status(400).send(`Já existe um produto com o mesmo ID ${id}.`);
+      res.status(400).send(`Já existe um produto com o mesmo 'id' ${id}.`);
       return;
     }
 
-    await db.raw(`INSERT INTO products
-    VALUES("${id}", "${name}", "${price}", "${description}", "${imageUrl}")
-    `);
+    const newProduct = {
+      id,
+      name,
+      price,
+      description,
+      image_url,
+    };
+
+    await db("products").insert(newProduct);
 
     res.status(200).send("Produto cadastrado com sucesso");
   } catch (error) {
@@ -206,9 +196,6 @@ app.post("/products", async (req: Request, res: Response) => {
     }
   }
 });
-
-// Validar que o produto existe antes de editá-lo
-// Validar os dados opcionais do body se eles forem recebidos
 
 app.put("/products/:id", async (req: Request, res: Response) => {
   try {
@@ -261,7 +248,7 @@ app.put("/products/:id", async (req: Request, res: Response) => {
       name = "${newName || newProduct.id}",
       price = "${newPrice || newProduct.price}",
       description = "${newDescription || newProduct.description}",
-      image_Url = "${newImageUrl || newProduct.image_Url}"      
+      image_Url = "${newImageUrl || newProduct.image_Url}"
       WHERE id = "${id}"
       `);
 
@@ -274,37 +261,36 @@ app.put("/products/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Validar que o produto existe antes de deletá-lo
-
-app.delete("/products/:id", async (req, res) => {
+app.delete("/products/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
 
-    const product = await db.raw("SELECT * FROM products WHERE id = ?", [id]);
-
-    if (product[0].length === 0) {
-      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
+    if (typeof id !== "string" || id.length !== 2) {
+      res.status(400).send({ message: "Informe um 'id' de 2 caracteres." });
       return;
     }
 
-    await db.raw("DELETE FROM products WHERE id = ?", [id]);
+    const product = await db("products").where({ id });
 
-    res.status(200).send({ message: "Produto deletado com sucesso" });
+    if (product.length === 0) {
+      res
+        .status(404)
+        .send({ message: `Não existe um produto com o 'id' ${id}` });
+    } else {
+      await db("products").where({ id }).delete();
+      res.status(200).send({ message: "Produto deletado com sucesso" });
+    }
   } catch (error) {
     console.error("Erro:", error);
     res.status(500).send("Erro ao deletar produto");
   }
 });
 
-//////
-
 app.post("/purchases", async (req: Request, res: Response) => {
   try {
-    const { id, buyer_id, total_price } = req.body;
+    const { id, buyer_id, id_product, quantity } = req.body;
 
-    console.log("@===>>>", id, buyer_id, total_price);
-
-    if (typeof id !== "string" || id.length < 4) {
+    if (typeof id !== "string" || id.length < 2) {
       res.statusCode = 404;
       throw new Error(`O campo do 'id' é obrigatório`);
     }
@@ -314,15 +300,55 @@ app.post("/purchases", async (req: Request, res: Response) => {
       throw new Error(`O campo do 'buyer id' é obrigatório`);
     }
 
-    if (typeof total_price !== "number" || total_price <= 1) {
+    if (typeof id_product !== "string" || id_product.length < 2) {
       res.statusCode = 404;
-      throw new Error(`O campo do 'preço' é obrigatório`);
+      throw new Error(`O campo 'id' do produto é obrigatório`);
     }
 
-    const isPurchase = await db.raw(`INSERT INTO purchases
-    (id, buyer_id, total_price)
-    VALUES("${id}", "${buyer_id}", "${total_price}")
-    `);
+    const [isPriceProduct] = await db("products").where({ id: id_product });
+
+    const sumQuantity = quantity * isPriceProduct.price;
+
+    const newPurchases = {
+      id,
+      buyer_id,
+      total_price: sumQuantity,
+    };
+
+    const newPurchasesProducts = {
+      purchase_id: id,
+      product_id: id_product,
+      quantity,
+    };
+
+    const [searchIdPurschase] = await db("purchases").where({ id });
+
+    const resultsProducts = await db("products")
+      .select("products.price", "purchases_products.quantity")
+      .innerJoin(
+        "purchases_products",
+        "products.id",
+        "=",
+        "purchases_products.product_id"
+      )
+      .where({ "purchases_products.purchase_id": id });
+
+    if (searchIdPurschase === undefined) {
+      await db("purchases").insert(newPurchases);
+      await db("purchases_products").insert(newPurchasesProducts);
+    } else {
+      const newResultsProducts = resultsProducts
+        .map((item) => item.price * item.quantity)
+        .reduce((a, b) => a + b);
+
+      const updateValuePurchases =
+        newPurchases.total_price + newResultsProducts;
+
+      await db("purchases_products").insert(newPurchasesProducts);
+      await db("purchases")
+        .update({ total_price: updateValuePurchases })
+        .where({ id });
+    }
 
     res.status(200).send("Produto cadastrado com sucesso");
   } catch (error) {
@@ -334,20 +360,78 @@ app.post("/purchases", async (req: Request, res: Response) => {
 
 app.delete("/purchases/:id", async (req: Request, res: Response) => {
   try {
-    const id = req.params.id;
+    const idToDel: string = req.params.id;
 
-    const purchase = await db.raw("SELECT * FROM purchases WHERE id = ?", [id]);
+    const [searchId] = await db.raw(`
+    SELECT id FROM purchases WHERE id = '${idToDel}'
+    `);
 
-    if (purchase[0].length === 0) {
-      res.status(404).send({ message: `Não existe uma conta com o id ${id}` });
-      return;
+    if (!searchId) {
+      res.statusCode = 404;
+      throw new Error("Pedido deletado com sucesso");
     }
 
-    await db.raw("DELETE FROM purchases WHERE id = ?", [id]);
+    await db.raw(`
+    DELETE FROM purchases_products WHERE purchase_id ='${searchId.id}';
+    `);
+    await db.raw(`
+    DELETE FROM purchases WHERE id ='${searchId.id}';
+    `);
 
-    res.status(200).send({ message: "Produto deletado com sucesso" });
+    res.status(200).send({ message: "Pedido deletado com sucesso" });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.send(error.message);
+    }
+  }
+});
+
+app.get("/purchases/:id", async (req, res) => {
+  try {
+    const purchaseId = req.params.id;
+
+    if (!purchaseId) {
+      res.statusCode = 404;
+      throw new Error(`Pedido com 'id' ${purchaseId} não encontrado`);
+    }
+
+    const [purchaseInfo] = await db("purchases")
+      .select(
+        "purchases.id as purchaseId",
+        "users.id as buyerId",
+        "users.name as buyerName",
+        "users.email as buyerEmail",
+        "purchases.total_price as totalPrice",
+        "purchases.created_at as createdAt"
+      )
+      .innerJoin("users", "purchases.buyer_id", "=", "users.id")
+      .where({ "purchases.id": purchaseId });
+
+    const resultProducts = await db("purchases_products")
+      .select(
+        "id as idProduct",
+        "name as nameProduct",
+        "price as priceProduct",
+        "description as descriptionProduct",
+        "image_url as imageUrlProducts",
+        "quantity as qtnd"
+      )
+      .innerJoin(
+        "products",
+        "purchases_products.product_id",
+        "=",
+        "products.id"
+      )
+      .where({ "purchases_products.purchase_id": purchaseId });
+
+    const newResult = {
+      ...purchaseInfo,
+      products: resultProducts,
+    };
+
+    res.status(200).send(newResult);
   } catch (error) {
     console.error("Erro:", error);
-    res.status(500).send("Erro ao deletar produto");
+    res.status(500).send("Erro ao buscar informações do pedido");
   }
 });
