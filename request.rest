@@ -5,65 +5,67 @@ POST http://localhost:3003/users
 Content-Type: application/json
 
   {
-    "id": "0010",
-    "name": "Tadeu",
-    "email": "tadeu@email.com",
-    "password": "9090909"
+    "id": "006",
+    "name": "André",
+    "email": "andre@email.com",
+    "password": "80239212"
   }
 ###
 
 
-DELETE http://localhost:3003/users/001
+DELETE http://localhost:3003/users/005
 Content-Type: application/json
 ###
 
 GET http://localhost:3003/products
 ###
 
-GET http://localhost:3003/products/search?q=Produto 12
+GET http://localhost:3003/products/search?q=Produto5
 ###
 
 POST http://localhost:3003/products
 Content-Type: application/json
 
   {       
-    "id": "p3",
-    "name": "Produto 3",
-    "price": 490.99,
-    "description": "Descrição do Produto 3",
-    "image_url": "url_imagem_3.jpg"
+    "id": "p12",
+    "name": "Produto 12",
+    "price": 390.99,
+    "description": "Descrição do Produto 12",
+    "image_url": "http://url_imagem_12.jpg"
   }
 ###
 
-PUT http://localhost:3003/products/p17
+PUT http://localhost:3003/products/p1
 Content-Type: application/json
 
   {       
-    "newId": "p2",
-    "newName": "Produto 2",
-    "newPrice": 290.99,
-    "newDescription": "Descrição do Produto 2",
-    "newImageUrl": "http://url_imagem_2.jpg"
+    "newId": "p9",
+    "newName": "Produto 9",
+    "newPrice": 490.99,
+    "newDescription": "Descrição do Produto 9",
+    "newImageUrl": "http://url_imagem_9.jpg"
   }
 ###
 
-DELETE http://localhost:3003/products/p1
+DELETE http://localhost:3003/products/p3
 Content-Type: application/json
 ###
 
-GET http://localhost:3003/purchases
-###
 
 POST http://localhost:3003/purchases
 Content-Type: application/json
 
   {       
-    "id": "p003",
-    "buyer_id": "001",
-    "total_price": 290.99
+    "id": "p011",
+    "buyer_id": "002",
+    "id_product":"p3",
+    "quantity": 2
   }
 ###
 
-DELETE http://localhost:3003/purchases/p002
+DELETE http://localhost:3003/purchases/p001
 Content-Type: application/json
 ###
+
+GET http://localhost:3003/purchases/p003
+Content-Type: application/json

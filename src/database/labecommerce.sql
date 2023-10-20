@@ -1,7 +1,9 @@
--- Active: 1695853753896@@127.0.0.1@3306
+-- Active: 1697671363538@@127.0.0.1@3306
 
 PRAGMA foreign_keys = ON; 
 PRAGMA date_class = 'datetime';
+
+DROP TABLE users;
 
 CREATE TABLE users (
     id TEXT PRIMARY KEY UNIQUE NOT NULL,
@@ -18,11 +20,11 @@ VALUES
   ('003', 'Beltrano', 'beltrano@email.com', '121212'),
   ('004', 'João', 'joao@email.com', '212121');
 
-
 DELETE FROM users WHERE id = '001';
 
 SELECT * FROM users;
-DROP TABLE users
+
+DROP TABLE products;
 
 CREATE TABLE products (
   id TEXT PRIMARY KEY UNIQUE NOT NULL,
@@ -57,11 +59,8 @@ UPDATE products SET
   image_url = 'novaimagemurl.jpg'
 WHERE id = 'p5';
 
-DROP TABLE products;
-
 
 DROP TABLE purchases;
-
 
 CREATE TABLE purchases (
     id TEXT PRIMARY KEY UNIQUE NOT NULL,
@@ -84,7 +83,7 @@ VALUES
 
 INSERT INTO purchases (id, buyer_id, total_price, product_id, product_description)
 VALUES 
-('p003', '003', 75.50, 'p3', 'Descrição produto 3'),
+('p003', '003', 75.50, 'p3', 'Descrição produto 3');
 
 -- Selecionando todos os pedidosc
 SELECT * FROM purchases;
@@ -125,8 +124,10 @@ CREATE TABLE purchases_products (
 
 INSERT INTO purchases_products (purchases_id, product_id, quantity)
 VALUES
-("p001", "p1", 10)
-("p002", "p2", 10)
-("p003", "p3", 10)
+("p001", "p1", 10),
+("p002", "p2", 10),
+("p003", "p3", 10);
+
+SELECT * FROM purchases_products;
 
 
