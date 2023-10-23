@@ -12,7 +12,6 @@ Content-Type: application/json
   }
 ###
 
-
 DELETE http://localhost:3003/users/005
 Content-Type: application/json
 ###
@@ -51,7 +50,6 @@ DELETE http://localhost:3003/products/p3
 Content-Type: application/json
 ###
 
-
 POST http://localhost:3003/purchases
 Content-Type: application/json
 
@@ -67,5 +65,5 @@ DELETE http://localhost:3003/purchases/p001
 Content-Type: application/json
 ###
 
-GET http://localhost:3003/purchases/p003
+GET http://localhost:3003/purchases/p011
 Content-Type: application/json
